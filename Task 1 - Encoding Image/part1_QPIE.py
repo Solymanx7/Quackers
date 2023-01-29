@@ -15,28 +15,38 @@ from collections import Counter
 from sklearn.metrics import mean_squared_error
 import pickle
 import json
-
+from itertools import chain
+import matplotlib.pyplot as plt
 
 ###########################
 ##### Functions #####
 ###########################
 
 # encoding
-def encode_img(image, register_num):
-    img = Image.open(image, 'r')
-    img = img.convert("L")  # grayscale
 
-    pix_val = list(img.getdata())
-    arr_pix_val = np.array(255*255*pix_val)
+
+def encode_img(image, register_num):
+    # img = Image.open(image, 'r')
+    # img = img.convert("L")  # grayscale
+    #
+    # pix_val = list(img.getdata())
+    img = list(chain(*image))
+    pix_val = img
+    # arr_pix_val = 255*255*pix_val
+    # print(pix_val)
 
     # normalize
-    pix_norm = np.linalg.norm(arr_pix_val)
-    arr_norm = arr_pix_val/pix_norm
+    pix_norm = np.linalg.norm(pix_val)
+    # print(pix_norm)
+    pix_val = np.array(pix_val)
+    arr_norm = pix_val/pix_norm
+    arr_norm = arr_norm.tolist()
 
-    # Eoncde onto the quantum register
+    # Encode onto the quantum register
     qc = QuantumCircuit(register_num)
-    qc.initialize(arr_norm.data, qc.qubits)
-
+    # test = arr_norm.append(np.zeros(2**10-arr_norm.shape))
+    test = arr_norm + np.zeros(2**register_num-784).tolist()
+    qc.initialize(test, qc.qubits)
     return qc
 
 # apply qft
@@ -92,5 +102,20 @@ def count_gates(circuit: qiskit.QuantumCircuit) -> Dict[int, int]:
 ###########################
 ##### Main #####
 ###########################
-dataset_labels = np.load('data/labels.npy')
-print(dataset_labels)
+
+# load data
+images = np.load('../data/images.npy')
+labels = np.load('../data/labels.npy')
+
+start = 0
+stop = 1
+circuit = encode_img(255*255*images[550], 10)
+histogram = simulate(circuit)
+print(histogram)
+plot_histogram(histogram)
+# for image in images:
+#     while start < stop:
+#         circuit = encode_img(255*255*image, 10)
+#         histogram = simulate(circuit)
+#         print(histogram)
+#     start += 1
