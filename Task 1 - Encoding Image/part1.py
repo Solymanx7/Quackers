@@ -7,8 +7,7 @@ import pickle
 import json
 from collections import Counter
 from sklearn.metrics import mean_squared_error
-from typing import Dict, List, Tuple
-import os
+from typing import Dict, List, Tuple import os
 import cv2
 
 ############################
