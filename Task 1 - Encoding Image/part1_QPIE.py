@@ -110,9 +110,11 @@ labels = np.load('../data/labels.npy')
 start = 0
 stop = 1
 circuit = encode_img(255*255*images[550], 10)
+print(circuit.draw())
 histogram = simulate(circuit)
 print(histogram)
 plot_histogram(histogram)
+# state vector: keys are the pixel position and the values are the normalized grayscale value. pixels with 0 grayscale are left out
 # for image in images:
 #     while start < stop:
 #         circuit = encode_img(255*255*image, 10)
