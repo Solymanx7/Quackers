@@ -26,10 +26,8 @@ DIM = 28
 ##### Functions #####
 ###########################
 
-# encoding
-
-
 def encode_img(image, register_num):
+    ''' encoding of image using QPIE method '''
     img = list(chain(*image))
     pix_val = img
 
@@ -47,8 +45,13 @@ def encode_img(image, register_num):
     return qc
 
 
-# decoding (written by prathu)
+def encode(image):
+    ''' final wrapper function (for submission) '''
+    return encode_img(255*255*image, register_num=10)
+
+
 def decode_img(histogram):
+    ''' decoding (written by prathu) '''
     pixelnums = list(range(DIM**2))
     for pix in pixelnums:
         if pix not in histogram.keys():
@@ -65,6 +68,11 @@ def decode_img(histogram):
     histarr = np.reshape(histdata, (DIM, DIM))
 
     return histarr
+
+
+def decode(histogram):
+    ''' final wrapper function (for submission) '''
+    return decode_img(histogram)
 
 # apply qft
 
@@ -124,40 +132,72 @@ def count_gates(circuit: qiskit.QuantumCircuit) -> Dict[int, int]:
 images = np.load('../data/images.npy')
 labels = np.load('../data/labels.npy')
 
-start = 0
-stop = 1
-n = 10
 # encoding
-circuit = encode_img(255*255*images[550], n)
-# apply classifier
-# circuit = apply_qft(circuit, n)
-histogram = simulate(circuit)
-plot_histogram(histogram)
-# qft_label = histogram_to_cat(histogram)
-# print(qft_label)
-# decoding
-fig, ax = plt.subplots(1)
-ax.set_aspect('equal')
-# this is the array you want to plot
-array_plot = decode_img(histogram)
-plt.imshow(array_plot, interpolation='nearest', cmap=plt.cm.hsv)
-plt.gray()
-u = plt.colorbar(fraction=0.046, pad=0.04)
-plt.clim(0, np.max(array_plot))
+# circuit = encode_img(255*255*images[550], n)
+# # apply classifier
+# # circuit = apply_qft(circuit, n)
+# histogram = simulate(circuit)
+# # state vector: keys are the pixel position and the values are the normalized grayscale value. pixels with 0 grayscale are left out
+# plot_histogram(histogram)
+# # qft_label = histogram_to_cat(histogram)
+# # print(qft_label)
+# # decoding
+# fig, ax = plt.subplots(1)
+# ax.set_aspect('equal')
+# # this is the array you want to plot
+# array_plot = decode_img(histogram)
+# plt.imshow(array_plot, interpolation='nearest', cmap=plt.cm.hsv)
+# plt.gray()
+# u = plt.colorbar(fraction=0.046, pad=0.04)
+# plt.clim(0, np.max(array_plot))
+#
+#
+# plt.xlim([0, DIM])
+# plt.ylim([0, DIM])
+#
+# # set fig size
+# fig.set_size_inches(5, 5)
+# fig.set_dpi(100)
+# # and ticks size
+# plt.xticks(fontsize=22)
+# plt.yticks(fontsize=22)
+# plt.gca().invert_yaxis()
+# plt.show()
 
 
-plt.xlim([0, DIM])
-plt.ylim([0, DIM])
+# test part1
+def run_part1(image):
+    circuit = encode(image)
+    histogram = simulate(circuit)
+    image_reconstructed = decode(histogram)
+    return circuit, image_reconstructed
 
-# set fig size
-fig.set_size_inches(5, 5)
-fig.set_dpi(100)
-# and ticks size
-plt.xticks(fontsize=22)
-plt.yticks(fontsize=22)
-plt.gca().invert_yaxis()
-plt.show()
-# state vector: keys are the pixel position and the values are the normalized grayscale value. pixels with 0 grayscale are left out
+
+start = 0
+stop = 5
+images = images[start:stop]
+length = len(images)
+mse = 0
+gatecount = 0
+for image in images:
+    # encode
+    circuit, image_reconstructed = run_part1(image)
+    # count num of 2qubit gates
+    gatecount += count_gates(circuit)[2]
+    # calculate mse
+    mse += image_mse(image, image_reconstructed)
+
+# fidelity of reconstruction
+f = 1-mse/length
+gatecount = gatecount/length
+
+# score
+score = f*(0.999**gatecount)
+
+print('fidelity: ', f)
+print('gatecount: ', gatecount)
+print('score: ', score)
+
 # for image in images:
 #     while start < stop:
 #         circuit = encode_img(255*255*image, 10)
