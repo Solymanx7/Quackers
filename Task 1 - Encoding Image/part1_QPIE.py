@@ -18,6 +18,10 @@ import json
 from itertools import chain
 import matplotlib.pyplot as plt
 
+# GLOBAL VARIABLES
+DIM = 28
+
+
 ###########################
 ##### Functions #####
 ###########################
@@ -26,18 +30,11 @@ import matplotlib.pyplot as plt
 
 
 def encode_img(image, register_num):
-    # img = Image.open(image, 'r')
-    # img = img.convert("L")  # grayscale
-    #
-    # pix_val = list(img.getdata())
     img = list(chain(*image))
     pix_val = img
-    # arr_pix_val = 255*255*pix_val
-    # print(pix_val)
 
     # normalize
     pix_norm = np.linalg.norm(pix_val)
-    # print(pix_norm)
     pix_val = np.array(pix_val)
     arr_norm = pix_val/pix_norm
     arr_norm = arr_norm.tolist()
@@ -45,9 +42,29 @@ def encode_img(image, register_num):
     # Encode onto the quantum register
     qc = QuantumCircuit(register_num)
     # test = arr_norm.append(np.zeros(2**10-arr_norm.shape))
-    test = arr_norm + np.zeros(2**register_num-784).tolist()
+    test = arr_norm + np.zeros(2**register_num-DIM**2).tolist()
     qc.initialize(test, qc.qubits)
     return qc
+
+
+# decoding (written by prathu)
+def decode_img(histogram):
+    pixelnums = list(range(DIM**2))
+    for pix in pixelnums:
+        if pix not in histogram.keys():
+            # grayscale pixel value is 0
+            histogram.update({pix: 0})
+
+    histnew = dict(sorted(histogram.items()))
+
+    histdata = []
+    # for i in enumerate(histnew):
+    for i in range(len(histnew)):
+        histdata.append(histnew[i])
+    histdata = np.array(histdata)
+    histarr = np.reshape(histdata, (DIM, DIM))
+
+    return histarr
 
 # apply qft
 
@@ -109,11 +126,37 @@ labels = np.load('../data/labels.npy')
 
 start = 0
 stop = 1
-circuit = encode_img(255*255*images[550], 10)
-print(circuit.draw())
+n = 10
+# encoding
+circuit = encode_img(255*255*images[550], n)
+# apply classifier
+# circuit = apply_qft(circuit, n)
 histogram = simulate(circuit)
-print(histogram)
 plot_histogram(histogram)
+# qft_label = histogram_to_cat(histogram)
+# print(qft_label)
+# decoding
+fig, ax = plt.subplots(1)
+ax.set_aspect('equal')
+# this is the array you want to plot
+array_plot = decode_img(histogram)
+plt.imshow(array_plot, interpolation='nearest', cmap=plt.cm.hsv)
+plt.gray()
+u = plt.colorbar(fraction=0.046, pad=0.04)
+plt.clim(0, np.max(array_plot))
+
+
+plt.xlim([0, DIM])
+plt.ylim([0, DIM])
+
+# set fig size
+fig.set_size_inches(5, 5)
+fig.set_dpi(100)
+# and ticks size
+plt.xticks(fontsize=22)
+plt.yticks(fontsize=22)
+plt.gca().invert_yaxis()
+plt.show()
 # state vector: keys are the pixel position and the values are the normalized grayscale value. pixels with 0 grayscale are left out
 # for image in images:
 #     while start < stop:
