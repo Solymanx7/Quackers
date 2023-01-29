@@ -1,6 +1,4 @@
-
 # QPIE method ( Quantum Probability Image Encoding )
-
 
 # Importing the libraries
 import numpy as np
@@ -20,6 +18,7 @@ import matplotlib.pyplot as plt
 
 # GLOBAL VARIABLES
 DIM = 28
+NUM_QUBITS = 10
 
 
 ###########################
@@ -47,35 +46,10 @@ def encode_img(image, register_num):
 
 def encode(image):
     ''' final wrapper function (for submission) '''
-    return encode_img(255*255*image, register_num=10)
+    return encode_img(255*255*image, register_num=NUM_QUBITS)
 
-
-def decode_img(histogram):
-    ''' decoding (written by prathu) '''
-    pixelnums = list(range(DIM**2))
-    for pix in pixelnums:
-        if pix not in histogram.keys():
-            # grayscale pixel value is 0
-            histogram.update({pix: 0})
-
-    histnew = dict(sorted(histogram.items()))
-
-    histdata = []
-    # for i in enumerate(histnew):
-    for i in range(len(histnew)):
-        histdata.append(histnew[i])
-    histdata = np.array(histdata)
-    histarr = np.reshape(histdata, (DIM, DIM))
-
-    return histarr
-
-
-def decode(histogram):
-    ''' final wrapper function (for submission) '''
-    return decode_img(histogram)
 
 # apply qft
-
 
 def apply_qft(circuit, register_num):
     circuit.append(
@@ -165,12 +139,23 @@ labels = np.load('../data/labels.npy')
 # plt.show()
 
 
-# test part1
-def run_part1(image):
+# test part2
+def run_part2(image):
+    with open('../quantum_classifier.pickle', 'rb') as f:
+        classifier = pickle.load(f)
     circuit = encode(image)
+    circuit.append(classifier)
     histogram = simulate(circuit)
-    image_reconstructed = decode(histogram)
-    return circuit, image_reconstructed
+    label_pred = histogram_to_cat(histogram)
+
+    # theshold can be decided to be whatever you want
+    threshold = 0.5
+    if label_pred > threshold:
+        label_pred = 1
+    else:
+        label_pred = 0
+
+    return circuit, label_pred
 
 
 start = 0
@@ -181,11 +166,11 @@ mse = 0
 gatecount = 0
 for image in images:
     # encode
-    circuit, image_reconstructed = run_part1(image)
+    circuit, label_pred = run_part2(image)
     # count num of 2qubit gates
     gatecount += count_gates(circuit)[2]
     # calculate mse
-    mse += image_mse(image, image_reconstructed)
+    mse += image_mse(image, label_pred)
 
 # fidelity of reconstruction
 f = 1-mse/length
@@ -197,10 +182,3 @@ score = f*(0.999**gatecount)
 print('fidelity: ', f)
 print('gatecount: ', gatecount)
 print('score: ', score)
-
-# for image in images:
-#     while start < stop:
-#         circuit = encode_img(255*255*image, 10)
-#         histogram = simulate(circuit)
-#         print(histogram)
-#     start += 1
