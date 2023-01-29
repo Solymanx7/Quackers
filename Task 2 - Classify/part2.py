@@ -51,7 +51,7 @@ def encode(image):
 
 # apply qft
 
-def apply_qft(circuit, register_num):
+def apply_qft(circuit, register_num=NUM_QUBITS):
     circuit.append(
         QFT(register_num, do_swaps=False).to_gate(), circuit.qubits)
     return circuit
@@ -141,11 +141,11 @@ labels = np.load('../data/labels.npy')
 
 # test part2
 def run_part2(image):
-    with open('../quantum_classifier.pickle', 'rb') as f:
-        classifier = pickle.load(f)
+    # with open('../quantum_classifier.pickle', 'rb') as f:
+    #     classifier = pickle.load(f)
     circuit = encode(image)
-    circuit.append(classifier)
-    histogram = simulate(circuit)
+    qft_cirquit = apply_qft(circuit)
+    histogram = simulate(qft_cirquit)
     label_pred = histogram_to_cat(histogram)
 
     # theshold can be decided to be whatever you want

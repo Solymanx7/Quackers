@@ -1,6 +1,7 @@
 # QPIE method ( Quantum Probability Image Encoding )
 
 # Importing the libraries
+from itertools import chain
 import numpy as np
 import qiskit
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, Aer, BasicAer, transpile, assemble
@@ -13,8 +14,8 @@ from collections import Counter
 from sklearn.metrics import mean_squared_error
 import pickle
 import json
-from itertools import chain
 import matplotlib.pyplot as plt
+import time
 
 # GLOBAL VARIABLES
 DIM = 28
@@ -27,19 +28,18 @@ NUM_QUBITS = 10
 
 def encode_img(image, register_num):
     ''' encoding of image using QPIE method '''
-    img = list(chain(*image))
+    img = [j for sub in image for j in sub]
+    # img = list(chain(*image))
     pix_val = img
 
     # normalize
     pix_norm = np.linalg.norm(pix_val)
-    pix_val = np.array(pix_val)
-    arr_norm = pix_val/pix_norm
+    arr_norm = np.array(pix_val)/pix_norm
     arr_norm = arr_norm.tolist()
 
     # Encode onto the quantum register
     qc = QuantumCircuit(register_num)
-    # test = arr_norm.append(np.zeros(2**10-arr_norm.shape))
-    test = arr_norm + np.zeros(2**register_num-DIM**2).tolist()
+    test = arr_norm + np.zeros((2**register_num)-DIM**2).tolist()
     qc.initialize(test, qc.qubits)
     return qc
 
@@ -125,11 +125,11 @@ labels = np.load('../data/labels.npy')
 
 
 # test part1
-def run_part1(image):
-    circuit = encode(image)
-    histogram = simulate(circuit)
-    image_reconstructed = decode(histogram)
-    return circuit, image_reconstructed
+def run_part1(img):
+    q_circuit = encode(img)
+    histogram = simulate(q_circuit)
+    image_re = decode(histogram)
+    return q_circuit, image_re
 
 
 start = 0
@@ -138,6 +138,7 @@ images = images[start:stop]
 length = len(images)
 mse = 0
 gatecount = 0
+start = time.time()
 for image in images:
     # encode
     circuit, image_reconstructed = run_part1(image)
@@ -145,6 +146,10 @@ for image in images:
     gatecount += count_gates(circuit)[2]
     # calculate mse
     mse += image_mse(image, image_reconstructed)
+
+end = time.time()
+
+print('runtime: ', end-start)
 
 # fidelity of reconstruction
 f = 1-mse/length
@@ -156,10 +161,3 @@ score = f*(0.999**gatecount)
 print('fidelity: ', f)
 print('gatecount: ', gatecount)
 print('score: ', score)
-
-# for image in images:
-#     while start < stop:
-#         circuit = encode_img(255*255*image, 10)
-#         histogram = simulate(circuit)
-#         print(histogram)
-#     start += 1
