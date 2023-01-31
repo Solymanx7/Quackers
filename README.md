@@ -7,5 +7,5 @@ Team members :
 - Prathu
 - varshaneya
 - SH
-- Solyman (solymanx7@gmail.com)
+- Solyman
 
