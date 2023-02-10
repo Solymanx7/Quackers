@@ -17,3 +17,5 @@ Colored Image (28x28) was given from Fashion MNIST dataset and it's required to 
 - SH
 - Solyman
 
+## Honor List :
+- Mahmoud ElMorshedy (Assist in: Quantum Classifier, CustomFeatureMap)
